@@ -416,6 +416,24 @@ a { color: inherit; }
   font-size: 1rem;
 }
 .form-submit { width: 100%; }
+/* r3 status-region revision (AGENTS.md static-page contract, 2026-10-01): the
+   role="status" paragraph inside the form is signup.js's feedback target. Empty = zero
+   footprint (margins/padding 0; an empty block is 0px tall) so the inert page never
+   shifts and the live region stays registered with AT — never display:none it. State
+   colors sit on the docket card's white surface (--card #FFFFFF): muted pine #2E5E3E
+   7.54:1 and oxide #6B2E1F 10.32:1, both WCAG 2.2 AA (computed, r3 report). */
+.signup-status {
+  margin-top: 0.75rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+.signup-status:empty {
+  margin: 0;
+  padding: 0;
+}
+.signup-status--success { color: #2E5E3E; }
+.signup-status--error { color: var(--oxide); }
 .form-disclosure {
   margin-top: 1.25rem;
   padding-top: 1rem;
