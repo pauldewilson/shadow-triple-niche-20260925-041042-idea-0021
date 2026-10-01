@@ -1,0 +1,1 @@
+window.__SHADOW_TRACKING_CONFIG__ = {"enabled": true, "endpoint": "https://canvaserpcanada-prod-shadow-api.victoriousdesert-5c606a5a.canadacentral.azurecontainerapps.io", "siteId": "triple-niche__20260925-041042/idea-0021", "environment": "production", "noticeVersion": "2026-10-analytics-v1"};

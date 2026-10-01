@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <title>Quoteleg — Charter quotes and invoices, built Canadian.</title>
-  <meta name="description" content="From rate card to QuickBooks-ready invoice in one workflow — with NAV CANADA fee lines and the GST/HST treatment you set already worked out. Launching Q4 2026.">
+  <meta name="description" content="From rate card to QuickBooks-ready invoice in one workflow — with NAV CANADA fee lines and the GST/HST treatment you set already worked out. Launching Q1 2027.">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -27,7 +28,7 @@
   <main id="main">
     <section class="hero" aria-labelledby="hero-title">
       <div class="container">
-        <p class="launch-stamp">Launching Q4 2026</p>
+        <p class="launch-stamp">Launching Q1 2027</p>
         <h1 id="hero-title" class="hero-title">Charter quotes and invoices, built Canadian.</h1>
         <p class="hero-sub">From rate card to QuickBooks-ready invoice in one workflow — with NAV CANADA fee lines and the GST/HST treatment you set already worked out.</p>
         <a class="btn btn-primary hero-cta" href="#signup">Get launch info</a>
@@ -170,7 +171,7 @@
           </div>
           <div class="faq-item">
             <h3 class="faq-q">When does it launch?</h3>
-            <p class="faq-a">Launching Q4 2026. Leave your details below and we'll send you more info when we launch.</p>
+            <p class="faq-a">Launching Q1 2027. Leave your details below and we'll send you more info when we launch.</p>
           </div>
         </div>
       </div>
@@ -189,16 +190,104 @@
             </div>
             <p class="signup-status" role="status"></p>
           </form>
-          <p class="form-disclosure">When you submit, we store your email address, the page you signed up from and basic technical metadata (time, IP, browser) — for one purpose only: sending you launch information.</p>
+          <p class="form-disclosure">When you submit, we store the email you enter, the address of the page you signed up from, and basic technical details (time, IP, browser, browser language, and the referring page if your browser sends one) — solely to send you launch information and to protect the form from abuse. To do that, submissions are checked by Google reCAPTCHA Enterprise, a separate security service from Google. Visit analytics is a separate, optional choice — allowing analytics is never required to sign up.</p>
         </div>
       </div>
     </section>
   </main>
 
+  <!-- Consent banner — production rollout (consented-attribution__20261001-140140;
+       ui-ux spec consent-banner-spec__20261001-142148.md principles applied to
+       this page's tokens; final strings S1–S3/S5 from marketing-copy
+       production-adaptation__20261001-185702.md, verbatim). Ships hidden;
+       tracking.js unhides it only after validating a live enabled
+       window.__SHADOW_TRACKING_CONFIG__ on a non-file: origin. Without that it
+       stays hidden forever: no storage, no requests, fully inert locally.
+       Normal-flow non-modal region between main and footer — never overlays the
+       signup CTA, status line or any focused element at any viewport. -->
+  <aside class="consent-banner" data-consent-banner aria-labelledby="consent-banner-title" hidden>
+    <div class="consent-banner__inner">
+      <h2 id="consent-banner-title" tabindex="-1">Allow visit analytics?</h2>
+      <p class="consent-banner__body">With your permission, we use a random browser ID for up to 30 days to connect visits and signups on this site. We record campaign tags, the pages you visit and basic browser/device details, and keep detailed records for up to 90 days. You can decline and still sign up, or change your choice anytime.</p>
+
+      <div class="consent-banner__actions">
+        <button type="button" class="consent-btn" data-consent-allow>Allow analytics</button>
+        <button type="button" class="consent-btn" data-consent-decline>Decline analytics</button>
+      </div>
+
+      <!-- Manager mode only (reopened via footer "Privacy choices" after a
+           choice exists); hidden in the initial decision state. -->
+      <p class="consent-banner__current" data-consent-current hidden></p>
+      <button type="button" class="consent-btn" data-consent-toggle hidden>Turn off analytics</button>
+      <button type="button" class="consent-btn consent-btn--ghost" data-consent-close hidden>Close</button>
+
+      <!-- Native inline disclosure (no JS for the toggle). Placed last so the
+           tab order is Allow → Decline → Privacy details in decision mode and
+           turn on/off → Close → Privacy details in manager mode (ui-ux §8.3). -->
+      <details class="consent-details" data-consent-details>
+        <summary class="consent-details__summary"><span>Privacy details</span></summary>
+        <div class="consent-details__body">
+          <p class="consent-details__heading">Who is responsible</p>
+          <p>This site is run by Canvas Tech Solutions, which is responsible for the data described here.</p>
+
+          <p class="consent-details__heading">What we collect if you allow analytics</p>
+          <ul>
+            <li>Campaign tags from the page address, when present: utm_source, utm_medium, utm_campaign, utm_id, utm_content and utm_term. Other tags and ad-click IDs (like gclid or fbclid) are ignored.</li>
+            <li>The page address in a cleaned form: the site, the page path and the accepted campaign tags — not the full address with every parameter.</li>
+            <li>Basic browser/device details: device type, browser family and major version, operating-system family, a screen-size range, and your browser's main language. We don't record the raw browser identification string and we don't fingerprint your device.</li>
+            <li>A random browser ID, kept for up to 30 days: a random code stored for this site only. It's not your name, email or account — but it can be linked to a signup you make here, so it isn't anonymous.</li>
+            <li>A session ID for the current tab, which expires after 30 minutes of inactivity.</li>
+            <li>Visit records: one record per page view measured after you allow analytics, kept for up to 90 days.</li>
+          </ul>
+
+          <p class="consent-details__heading">How analytics connects to signups</p>
+          <p>If you allow analytics and later submit the launch-notification form on this site, your visit can be connected to that signup, so we can see which campaign brought you here. If you decline or haven't chosen, signing up works exactly the same — we just store the page address without campaign tags, and no visit connection is made. Allowing analytics is never required to sign up.</p>
+
+          <p class="consent-details__heading">Service providers</p>
+          <ul>
+            <li>This site's pages are hosted by GitHub Pages (GitHub, Inc.).</li>
+            <li>Signup and analytics records are stored in a PostgreSQL database hosted in Ontario, on Microsoft Azure. Other parts of the service — such as backups or support — may involve processing outside Ontario.</li>
+            <li>The launch-notification form is protected by Google reCAPTCHA Enterprise, a separate security service from Google that checks submissions for abuse. It runs whether or not you allow analytics; declining analytics doesn't turn it off.</li>
+          </ul>
+
+          <p class="consent-details__heading">Why we use this data</p>
+          <ul>
+            <li>To measure which campaigns bring visits and launch-notification signups on this site.</li>
+            <li>To spot coarse browser and device compatibility issues.</li>
+          </ul>
+
+          <p class="consent-details__heading">What we don't do</p>
+          <ul>
+            <li>No advertising trackers or ad pixels.</li>
+            <li>No cross-site identity — your browser ID works on this site only.</li>
+            <li>No joining analytics data to your email address.</li>
+            <li>No fingerprinting.</li>
+            <li>No full IP address in analytics records. Like any website, this site's ordinary hosting and security do receive standard network details such as your IP address — that's separate from the optional analytics choice.</li>
+            <li>If you decline: we store only your choice and its date on your browser — no browser ID, no visit records.</li>
+          </ul>
+
+          <p class="consent-details__heading">How long we keep it</p>
+          <ul>
+            <li>Random browser ID: up to 30 days.</li>
+            <li>Detailed visit records and signup links: up to 90 days.</li>
+            <li>Your privacy choice itself: up to 180 days, or until we make a material change to this notice.</li>
+            <li>Summary counts without browser IDs (for example, visits per campaign per day): up to 13 months.</li>
+          </ul>
+
+          <p class="consent-details__heading">Changing your choice</p>
+          <p>Select 'Privacy choices' anytime. Declining or withdrawing stops collection immediately, clears the browser ID and discards any not-yet-sent visits. Records already made are kept until their normal expiry (above) unless you ask us to delete them.</p>
+
+          <p class="consent-details__heading">Access and deletion</p>
+          <p>You can ask what data is connected to your browser ID, or have it deleted, by contacting the site owner (Canvas Tech Solutions). Because a browser ID alone doesn't prove who you are, we use a basic verification step before sharing or deleting anything.</p>
+        </div>
+      </details>
+    </div>
+  </aside>
+
   <footer class="site-footer">
     <div class="container">
       <p class="footer-brand">Quoteleg — charter quotes and invoices, built Canadian.</p>
-      <p class="footer-launch">Launching Q4 2026.</p>
+      <p class="footer-launch">Launching Q1 2027.</p>
       <nav class="footer-nav" aria-label="Footer">
         <ul class="footer-list">
           <li><a class="footer-link" href="#what-it-does">What it does</a></li>
@@ -208,10 +297,22 @@
         </ul>
       </nav>
       <p class="footer-copy">© 2026 Quoteleg</p>
+      <!-- Persistent post-decision privacy control: hidden until a choice exists
+           and while the banner/manager surface is open (tracking.js toggles it);
+           on the inert local page it never appears. -->
+      <p class="footer-privacy" data-footer-privacy hidden>
+        <button type="button" class="footer-privacy__button" data-consent-reopen>Privacy choices</button>
+        <span class="footer-privacy__state" data-consent-state></span>
+      </p>
+      <!-- Live region for consent state feedback (screen readers); describes the
+           stored preference only, never claims measurement success. -->
+      <p class="sr-only" role="status" data-consent-status></p>
     </div>
   </footer>
 
   <script src="signup.js" defer></script>
   <script src="signup-config.js" defer></script>
+  <script src="tracking-config.js" defer></script>
+  <script src="tracking.js" defer></script>
 </body>
 </html>
