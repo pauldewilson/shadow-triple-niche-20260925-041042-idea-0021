@@ -1,0 +1,505 @@
+/* ============ 1. Tokens ============ */
+:root {
+  --paper: #F4F2ED;
+  --card: #FFFFFF;
+  --ink: #262A2E;
+  --ink-muted: #575E63;
+  --hairline: #DAD7CF;
+  --oxide: #6B2E1F;
+  --bone-on-oxide: #F4F2ED;
+  --band-soft: #D9C6BC;      /* reserved; unused in v1 (band-only token) */
+  --oxide-rule: #8A5245;
+  --font-doc: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-docket: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", "Courier New", monospace;
+  --measure: 62ch;
+  --band-measure: 40rem;
+  --sheet-measure: 34rem;
+  --radius: 2px;
+  --pad-sec: clamp(4rem, 9vw, 6.5rem);
+  --pad-band: clamp(4.5rem, 9vw, 7rem);
+  --pad-inline: clamp(1.25rem, 5vw, 2rem);
+}
+
+/* ============ 2. Base ============ */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-doc);
+  font-size: clamp(1rem, 0.95rem + 0.25vw, 1.0625rem);
+  line-height: 1.6;
+}
+h1, h2, h3, p, figure { margin: 0; }
+strong { font-weight: 700; }
+a { color: inherit; }
+:focus-visible {
+  outline: 2px solid var(--oxide);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+::placeholder { color: var(--ink-muted); opacity: 1; }
+
+/* sr-only: AT-visible/visually-hidden utility (spec r2 Edit A). Used by the pricing
+   table caption and (via the same clip pattern, scoped) by the stacked-mode thead. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============ 3. Layout ============ */
+.container {
+  max-width: 64rem;
+  margin-inline: auto;
+  padding-inline: var(--pad-inline);
+}
+.section {
+  border-top: 1px solid var(--hairline);
+  padding-block: var(--pad-sec);
+}
+.section-title {
+  font-size: clamp(1.4rem, 2.2vw, 1.6rem);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.prose { max-width: var(--measure); }
+.prose p + p { margin-top: 1em; }
+
+/* ============ 4. Components ============ */
+
+/* Skip link */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.skip-link:focus { left: 0; }
+
+/* Header / nav */
+.site-header { padding-block: 0.75rem; }
+.header-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1.5rem;
+}
+.wordmark {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.nav-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.25rem;
+  list-style: none; /* visual-qa revise round: suppress native disc bullets between nav links */
+  padding: 0;
+  margin: 0;
+}
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  color: var(--ink);
+  font-weight: 400;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Hero */
+.hero { padding-block: clamp(3rem, 7vw, 5rem) clamp(3.5rem, 8vw, 5.5rem); }
+.launch-stamp {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 0.9rem;
+  border: 2px solid var(--oxide);
+  border-radius: var(--radius);
+  color: var(--oxide);
+  font-family: var(--font-docket);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-1.5deg);
+}
+.hero-title {
+  max-width: 22ch;
+  font-size: clamp(2.1rem, 4.5vw, 2.9rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+}
+.hero-sub {
+  /* 37rem per spec §9 em-dash rule: 36rem wrapped line 2 to start with "— " at 1024/1440;
+     37rem probed clean at 640/768/1024/1440 and stays container-bound (no effect) at 320/360. */
+  max-width: 37rem;
+  margin-top: 1.25rem;
+  color: var(--ink-muted);
+  font-size: clamp(1.125rem, 1.05rem + 0.35vw, 1.25rem);
+  line-height: 1.55;
+}
+.hero-cta { margin-top: 1.75rem; }
+
+/* Buttons (both CTAs; the page's only oxide fills) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.75rem 1.25rem;
+  border: 0;
+  border-radius: var(--radius);
+  font-family: var(--font-doc);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn-primary {
+  background: var(--oxide);
+  color: var(--card);
+}
+
+/* What it does */
+.benefit-intro { margin-top: 1.25rem; max-width: var(--measure); }
+.benefit-list {
+  margin-top: 2rem;
+  border-top: 1px solid var(--hairline);
+  list-style: none;
+  padding: 0;
+}
+.benefit {
+  padding-block: 1.5rem;
+  border-bottom: 1px solid var(--hairline);
+}
+.benefit-title { font-size: clamp(1.05rem, 1rem + 0.2vw, 1.125rem); font-weight: 700; }
+.benefit-body {
+  /* 63ch per spec §9 em-dash rule: 62ch (var(--measure)) wrapped benefit 1's line 2 to start
+     with "— " at 768/1024/1440; 63ch probed clean there and changes nothing below ~560px. */
+  margin-top: 0.5rem;
+  max-width: 63ch;
+}
+.free-tier-line { margin-top: 2rem; max-width: var(--measure); font-weight: 600; }
+
+/* How it works */
+.steps {
+  margin-top: 1.5rem;
+  padding-left: 1.5rem;
+  max-width: var(--measure);
+  list-style: decimal;
+  display: grid;
+  gap: 1rem;
+}
+.step strong { font-weight: 700; }
+
+/* Mockup (fake-UI contract: see §8) */
+.mockup-figure { margin-top: 2.5rem; }
+.docket-sheet {
+  width: 100%;
+  max-width: var(--sheet-measure);
+  background: var(--card);
+  border: 1px solid var(--hairline);
+  border-top: 2px dashed var(--hairline);
+  padding: 1.5rem;
+}
+.mockup-figure figcaption {
+  margin-top: 0.75rem;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+.docket-body {
+  font-family: var(--font-docket);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.docket-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--hairline);
+}
+.docket-brand {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.docket-ref { color: var(--ink-muted); }
+.docket-trip { margin-top: 0.75rem; }
+.docket-group { margin-top: 1.25rem; }
+.docket-group-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+}
+.docket-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.4rem;
+}
+.docket-label { min-width: 0; }
+.docket-amt {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.docket-note-line .docket-label { color: var(--ink-muted); }
+.docket-total {
+  margin-top: 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--ink);
+  font-weight: 700;
+}
+.docket-total-amt { font-variant-numeric: tabular-nums; }
+.docket-export {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--hairline);
+}
+.mock-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.mock-btn {
+  display: inline-block;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--ink-muted);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 0.78rem;
+}
+
+/* Pricing */
+.pricing-lead { margin-top: 1.25rem; max-width: var(--measure); }
+.table-card {
+  width: 100%;
+  max-width: 44rem;
+  margin-top: 2rem;
+  background: var(--card);
+  border: 1px solid var(--hairline);
+}
+.pricing-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.pricing-table th,
+.pricing-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--hairline);
+  text-align: left;
+  vertical-align: top;
+}
+.pricing-table thead th {
+  border-bottom: 1px solid var(--ink);
+  color: var(--ink-muted);
+  font-family: var(--font-docket);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.pricing-table tbody th {
+  font-family: var(--font-docket);
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+/* spec r2 Edit B — column voices: Fleet fit reads secondary; paid-row price cells
+   carry the docket-mono tabular-numeral voice (Free row's third cell is narrative
+   scope text, deliberately excluded from the mono voice). */
+.pricing-table td:nth-child(2) {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+.pricing-table tbody tr:nth-child(n+2) td:nth-child(3) {
+  font-family: var(--font-docket);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.pricing-bills { /* spec r2 Edit C — bill-by-fleet docket line under the table card */
+  margin-top: 0.75rem;
+  max-width: 44rem;
+  font-family: var(--font-docket);
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.pricing-body { margin-top: 1.5rem; max-width: var(--measure); }
+.pricing-closer { margin-top: 1rem; max-width: var(--measure); font-weight: 600; }
+
+/* FAQ */
+.faq-list { margin-top: 2rem; max-width: var(--measure); }
+.faq-item { padding-block: 1.25rem; border-top: 1px solid var(--hairline); }
+.faq-item:last-child { border-bottom: 1px solid var(--hairline); }
+.faq-q { font-size: 1.05rem; font-weight: 700; }
+.faq-a { margin-top: 0.5rem; }
+
+/* Signup band (focal point — see §7) */
+.signup-band {
+  background: var(--oxide);
+  color: var(--bone-on-oxide);
+  padding-block: var(--pad-band);
+}
+.band-inner { max-width: var(--band-measure); } /* after .container in the cascade */
+.band-title {
+  font-size: clamp(1.9rem, 3.4vw, 2.3rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.band-hook { margin-top: 1rem; max-width: 36rem; }
+.docket-card {
+  width: 100%;
+  margin-top: 2rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--hairline);
+  border-top: 2px dashed var(--hairline);
+}
+.signup-form { margin: 0; }
+.form-label {
+  display: block;
+  color: var(--ink);
+  font-family: var(--font-docket);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.form-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.75rem;
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--ink-muted);
+  border-radius: var(--radius);
+  font-family: var(--font-docket);
+  font-size: 1rem;
+}
+.form-submit { width: 100%; }
+.form-disclosure {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--oxide-rule);
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+/* Footer */
+.site-footer {
+  border-top: 1px solid var(--hairline);
+  padding-block: 2.5rem;
+}
+.footer-brand { font-weight: 600; }
+.footer-launch { margin-top: 0.25rem; color: var(--ink-muted); }
+.footer-nav { margin-top: 1rem; }
+.footer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0;
+  list-style: none;
+}
+.footer-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.footer-copy {
+  margin-top: 1.25rem;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
+/* ============ 5. Responsive breakpoints and utilities ============ */
+@media (min-width: 30em) { /* 480px */
+  .form-row { flex-direction: row; }
+  .form-input { flex: 1; min-width: 0; }
+  .form-submit { width: auto; white-space: nowrap; }
+  .footer-list { flex-direction: row; flex-wrap: wrap; gap: 0 1rem; }
+}
+/* visual-qa revise round (≥640px only): Chrome treats en/hyphen dashes as break
+   opportunities INSIDE the NBSP-bound units, so fleet-fit cells ("2–3 aircraft"),
+   the plan row labels ("Free — quote-only") and the fleet-fit header cell wrapped
+   into 2-line stacks. Scoped ≥40em so the 480px watch window keeps its measured
+   behavior byte-for-byte; NOT table-wide — price cells and the Plan/Price headers
+   keep their normal wrap. */
+@media (min-width: 40em) { /* 640px */
+  .pricing-table thead th:nth-child(2),
+  .pricing-table td:nth-child(2),
+  .pricing-table tbody th { white-space: nowrap; }
+}
+@media (min-width: 48em) { /* 768px */
+  .benefit { padding-block: 1.75rem; }
+  .faq-item { padding-block: 1.5rem; }
+  .pricing-table th, .pricing-table td { padding: 0.9rem 1rem; }
+  .docket-sheet { padding: 1.75rem; }
+  .docket-body { font-size: 0.9rem; }
+}
+@media (min-width: 64em) { /* 1024px */
+  .steps { gap: 1.25rem; }
+  .docket-sheet { padding: 2rem; }
+}
+@media (max-width: 29.99em) { /* below 480px: pricing table stacks — full <table> semantics kept for AT (thead visually hidden via clip, NEVER display:none) */
+  .pricing-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+  .pricing-table, .pricing-table tbody, .pricing-table tr,
+  .pricing-table th, .pricing-table td { display: block; }
+  .pricing-table tr { padding: 1rem 0.875rem; }
+  .pricing-table tr + tr { border-top: 1px solid var(--hairline); }
+  .pricing-table th, .pricing-table td { padding: 0; border-bottom: 0; }
+  .pricing-table td { margin-top: 0.375rem; }
+}
