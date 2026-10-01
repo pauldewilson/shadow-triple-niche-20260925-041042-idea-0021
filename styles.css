@@ -597,6 +597,15 @@ a { color: inherit; }
   cursor: pointer;
 }
 
+/* Hidden-state guard (RC-1, live-rollout verification 2026-10-01): the author
+   inline-flex above must never defeat the UA [hidden]{display:none} — decision
+   mode keeps Turn off analytics/Close out of the render and tab order, manager
+   mode keeps Allow/Decline out (tracking.js sets hidden on both pairs).
+   display:none = invisible AND unfocusable. Same lesson as .footer-privacy
+   below (staging QA F1). Specificity (0,2,0) beats the rules above; no
+   !important needed. */
+.consent-btn[hidden] { display: none; }
+
 .consent-btn:hover { background: var(--oxide); border-color: var(--oxide); }
 
 /* Ghost variant exists ONLY in manager mode (Close), always beside the visible
