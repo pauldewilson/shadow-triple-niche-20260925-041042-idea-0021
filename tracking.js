@@ -14,6 +14,16 @@
  *     (banner/buttons/details/current-choice strings live in index.html; status
  *     wording per ui-ux §4.5)
  *
+ * Sticky-overlay UI additions (consent-banner-sticky__20261002-145950, user
+ * directive 2026-10-02): the banner is a fixed bottom overlay; the details
+ * disclosure opens FULLSCREEN on compact viewports. Presentation-only changes:
+ * fullscreen Close/focus choreography on the details toggle event, Escape to
+ * close the fullscreen panel, a focus-scroll guard so a focused element is
+ * never left behind the overlay, inert-background toggling scoped to the
+ * mobile fullscreen view (robust cleanup — a close path can never leave the
+ * page inert). Storage, receipts, retries, states and hooks are untouched.
+ * All additions bind only in the config-gated activation path.
+ *
  * Two-state contract:
  *  - Local engineering pages ship a comment-only tracking-config.js stub, so
  *    window.__SHADOW_TRACKING_CONFIG__ stays undefined — and file:// never
@@ -678,6 +688,10 @@
 
   var banner, allowBtn, declineBtn, currentLine, toggleBtn, closeBtn,
       footerPrivacy, reopenBtn, stateText, statusLine, bannerTitle;
+  /* Sticky-overlay additions (consent-banner-sticky__20261002-145950) */
+  var detailsEl, detailsSummary, detailsCloseBtn, bannerInner;
+  var inertTargets = [];        // body children frozen out while the fullscreen panel is open
+  var suppressDetailsFocus = false; // programmatic detail-close must not steal closeSurface's focus
 
   function setHidden(el, hidden) {
     if (!el) return;
@@ -721,6 +735,7 @@
   }
 
   function closeSurface() {
+    resetDetailsSurface(); // sticky-overlay safety: never leave inert/fullscreen chrome behind
     setHidden(banner, true);
     refreshFooter();
     if (footerPrivacy && !footerPrivacy.hasAttribute('hidden') && reopenBtn) {
@@ -777,12 +792,192 @@
     closeSurface();
   }
 
+  /* ---------------- sticky-overlay additions (consent-banner-sticky__20261002-145950) ----------------
+     Config-gated: called only from bindUi()/init() after a valid enabled
+     config, so inert local pages keep zero listeners with effects. The
+     details disclosure opens as a fullscreen fixed panel on compact
+     viewports (CSS-only mode switch); fullscreen mode is detected from the
+     Close control's computed display — read ONLY while the details is open,
+     so the unrendered closed state can never be misread. */
+
+  function isFullscreenPanelMode() {
+    if (!detailsCloseBtn) return false;
+    try {
+      return window.getComputedStyle(detailsCloseBtn).display !== 'none';
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function focusEl(el) {
+    if (!el) return;
+    try { el.focus(); } catch (err) { /* focus is best-effort */ }
+  }
+
+  /* While the mobile fullscreen panel is open the background page becomes
+     non-focusable (user-directed deviation from the plan's non-modal
+     preference, scoped to the fullscreen view; desktop inline stays fully
+     non-modal). Targets are the body's direct element children except the
+     banner itself (covers main, footer, header and skip links). */
+  function setSurfaceInert(active) {
+    for (var i = 0; i < inertTargets.length; i++) {
+      try {
+        if (active) inertTargets[i].setAttribute('inert', '');
+        else inertTargets[i].removeAttribute('inert');
+      } catch (err) { /* keep going — restore every node */ }
+    }
+  }
+
+  /* Focus choreography on the details toggle event (ui-ux §8.3: a
+     user-initiated reveal may move focus; focus must never land on a
+     hidden/removed node). Open on mobile → focus the fullscreen Close
+     control; close (any mode) → restore focus to the summary. Desktop inline
+     open/close keeps the native no-move behavior. */
+  function onDetailsToggle() {
+    if (!detailsEl || !banner) return;
+    var open = detailsEl.hasAttribute('open');
+    try {
+      if (open && isFullscreenPanelMode()) {
+        banner.classList.add('consent-banner--details-open'); // CSS hides the compact bar
+        setSurfaceInert(true);
+        focusEl(detailsCloseBtn);
+      } else {
+        banner.classList.remove('consent-banner--details-open');
+        setSurfaceInert(false);
+        if (!open && !suppressDetailsFocus) focusEl(detailsSummary);
+      }
+    } finally {
+      if (!open) {
+        suppressDetailsFocus = false;
+        setSurfaceInert(false); // guarantee: no close path can leave the page inert
+      }
+    }
+  }
+
+  function onDetailsCloseClick() {
+    if (!detailsEl) return;
+    suppressDetailsFocus = false; // user-initiated close: the toggle restores focus to the summary
+    detailsEl.removeAttribute('open');
+  }
+
+  /* Escape closes the fullscreen DETAILS panel only — never the decision or
+     manager surface (ui-ux §9: the unset banner's only exits are Allow,
+     Decline, or leaving; the manager Close is deliberate). */
+  function onDocumentKeydown(event) {
+    if (!event || (event.key !== 'Escape' && event.key !== 'Esc')) return;
+    if (!detailsEl || !detailsEl.hasAttribute('open') || !isFullscreenPanelMode()) return;
+    onDetailsCloseClick();
+  }
+
+  /* Focus-scroll guard: with a fixed bottom overlay, a browser's native
+     scroll-into-view can leave the focused element behind the banner. When a
+     newly focused element would be obscured by the card, scroll its nearest
+     scrollable ancestor up just enough to clear it (plan §6 / ui-ux §8.3:
+     a focused element is never left obscured). Banner-internal elements
+     always clear (they live in the overlay). */
+  function scrollableAncestorOf(el) {
+    var node = el;
+    while (node) {
+      if (node === document.body || node === document.documentElement) {
+        return document.scrollingElement || document.documentElement;
+      }
+      if (typeof node.getBoundingClientRect === 'function') {
+        var style = window.getComputedStyle(node);
+        var overflowY = style && style.overflowY;
+        if ((overflowY === 'auto' || overflowY === 'scroll') &&
+            node.scrollHeight > node.clientHeight + 1) {
+          return node;
+        }
+      }
+      node = node.parentElement;
+    }
+    return document.scrollingElement || null;
+  }
+
+  function onFocusScrollGuard(event) {
+    if (!banner || !bannerInner || banner.hasAttribute('hidden')) return;
+    var target = event && event.target;
+    if (!target || typeof target.getBoundingClientRect !== 'function') return;
+    if (banner.contains(target)) return; // the overlay's own controls are never behind it
+    var card = bannerInner.getBoundingClientRect();
+    if (!card || card.width === 0 || card.top >= (window.innerHeight || document.documentElement.clientHeight)) return;
+    var rect = target.getBoundingClientRect();
+    if (!rect || rect.width === 0) return;
+    // obscured only if the element's rect actually intersects the card
+    var obscured = rect.bottom > card.top && rect.top < card.bottom &&
+                   rect.right > card.left && rect.left < card.right;
+    if (!obscured) return;
+    var scroller = scrollableAncestorOf(target);
+    if (!scroller) return;
+    // Scrolling DOWN moves the element up, out from behind the bottom-anchored
+    // card. Scroll only as far as needed (+8px keeps the focus outline clear
+    // of the card edge), never push the element's own top off-screen, and
+    // never beyond the scroller's end — at the page's absolute bottom nothing
+    // can scroll further, which is the accepted bottom-edge tradeoff while
+    // the surface is open (plan §6 amendment); the guard then simply stands
+    // down instead of scrolling away from the element.
+    var overlap = (rect.bottom + 8) - card.top;
+    var maxScroll = 0;
+    try { maxScroll = scroller.scrollHeight - scroller.clientHeight; } catch (err) { maxScroll = 0; }
+    var roomBelow = maxScroll - scroller.scrollTop;
+    var headroom = Math.min(overlap, rect.top, roomBelow);
+    if (headroom <= 0) return;
+    try { scroller.scrollTop += headroom; } catch (err) { /* scrolling is best-effort */ }
+  }
+
+  /* Viewport flips while the details is open must keep the chrome invariant:
+     after ANY flip, an open panel on a compact viewport always carries the
+     fullscreen chrome (class + inert background) and on a desktop viewport
+     never does (the CSS chrome follows the media query; the class/inert/focus
+     state is JS-owned and would otherwise go stale until a close path heals
+     it). Flipping INTO fullscreen adopts the chrome — class, inert background
+     and focus on the Close control — so the reader keeps their place (the
+     summary they were on becomes visibility:hidden, so Close is the correct
+     focus target, never a hidden node). Flipping to desktop leaves the
+     disclosure open inline, drops the chrome and restores focus to the
+     summary. Idempotent under the rapid resize events a drag produces. */
+  function reconcileViewportMode() {
+    if (!detailsEl || !detailsEl.hasAttribute('open')) return;
+    if (isFullscreenPanelMode()) {
+      if (banner && !banner.classList.contains('consent-banner--details-open')) {
+        banner.classList.add('consent-banner--details-open');
+        setSurfaceInert(true);
+        focusEl(detailsCloseBtn);
+      }
+      return;
+    }
+    if (banner) banner.classList.remove('consent-banner--details-open');
+    setSurfaceInert(false);
+    focusEl(detailsSummary);
+  }
+
+  /* Safety reset for closeSurface: whatever path closes the surface, the page
+     must never stay inert and the fullscreen chrome must never stay stuck. */
+  function resetDetailsSurface() {
+    if (banner) banner.classList.remove('consent-banner--details-open');
+    setSurfaceInert(false);
+    if (detailsEl && detailsEl.hasAttribute('open')) {
+      suppressDetailsFocus = true; // closeSurface owns focus restoration
+      detailsEl.removeAttribute('open'); // async toggle clears the flag without stealing focus
+    }
+  }
+
   function bindUi() {
     if (allowBtn) allowBtn.addEventListener('click', onAllow);
     if (declineBtn) declineBtn.addEventListener('click', onDecline);
     if (reopenBtn) reopenBtn.addEventListener('click', onReopen);
     if (closeBtn) closeBtn.addEventListener('click', onClose);
     if (toggleBtn) toggleBtn.addEventListener('click', onToggle);
+    /* Sticky-overlay additions: document-level listeners early-return while
+       the banner is hidden or the panel closed, so they are inert without an
+       activated config and after every close. */
+    if (detailsEl) {
+      detailsEl.addEventListener('toggle', onDetailsToggle);
+      if (detailsCloseBtn) detailsCloseBtn.addEventListener('click', onDetailsCloseClick);
+      document.addEventListener('keydown', onDocumentKeydown);
+    }
+    document.addEventListener('focusin', onFocusScrollGuard);
+    window.addEventListener('resize', reconcileViewportMode);
   }
 
   /* ------------------------------------------------------------- init */
@@ -809,6 +1004,21 @@
     stateText = byHook('consent-state');
     statusLine = byHook('consent-status');
     bannerTitle = document.getElementById('consent-banner-title');
+
+    /* Sticky-overlay additions (consent-banner-sticky__20261002-145950):
+       resolve the disclosure nodes and freeze the inert target list once —
+       the DOM is static from here on. Targets: every direct element child of
+       <body> except the banner itself (scripts excluded). */
+    detailsEl = byHook('consent-details');
+    detailsCloseBtn = byHook('consent-details-close');
+    detailsSummary = detailsEl ? detailsEl.querySelector('summary') : null;
+    bannerInner = banner ? banner.querySelector('.consent-banner__inner') : null;
+    inertTargets = [];
+    var bodyChildren = document.body.children;
+    for (var i = 0; i < bodyChildren.length; i++) {
+      var node = bodyChildren[i];
+      if (node !== banner && node.tagName !== 'SCRIPT') inertTargets.push(node);
+    }
 
     resumeRevocation();
 

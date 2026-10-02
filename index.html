@@ -203,8 +203,16 @@
        tracking.js unhides it only after validating a live enabled
        window.__SHADOW_TRACKING_CONFIG__ on a non-file: origin. Without that it
        stays hidden forever: no storage, no requests, fully inert locally.
-       Normal-flow non-modal region between main and footer — never overlays the
-       signup CTA, status line or any focused element at any viewport. -->
+       Sticky bottom overlay pinned to the viewport bottom (revision
+       consent-banner-sticky__20261002-145950 — user directive 2026-10-02
+       supersedes the 2026-10-01 normal-flow placement; the page stays
+       scrollable and non-modal). Compact viewports show a small bar whose
+       "Privacy details" disclosure opens as a fullscreen fixed panel
+       (tracking.js adds the .consent-banner--details-open class that hides the
+       bar and makes the background non-focusable, with robust cleanup); the
+       focus-scroll guard keeps "a focused element is never obscured" true
+       under the overlay; desktop keeps the full inline disclosure in a
+       centered, height-capped card. -->
   <aside class="consent-banner" data-consent-banner aria-labelledby="consent-banner-title" hidden>
     <div class="consent-banner__inner">
       <h2 id="consent-banner-title" tabindex="-1">Allow visit analytics?</h2>
@@ -221,12 +229,16 @@
       <button type="button" class="consent-btn" data-consent-toggle hidden>Turn off analytics</button>
       <button type="button" class="consent-btn consent-btn--ghost" data-consent-close hidden>Close</button>
 
-      <!-- Native inline disclosure (no JS for the toggle). Placed last so the
+      <!-- Native disclosure; tracking.js adds only focus choreography, Escape
+           and the fullscreen Close handling on live pages. Placed last so the
            tab order is Allow → Decline → Privacy details in decision mode and
-           turn on/off → Close → Privacy details in manager mode (ui-ux §8.3). -->
+           turn on/off → Close → Privacy details in manager mode (ui-ux §8.3).
+           The Close control at the top of the body is the fullscreen panel's
+           chrome (compact viewports only; hidden on the desktop inline view). -->
       <details class="consent-details" data-consent-details>
         <summary class="consent-details__summary"><span>Privacy details</span></summary>
         <div class="consent-details__body">
+          <button type="button" class="consent-details__close" data-consent-details-close>Close</button>
           <p class="consent-details__heading">Who is responsible</p>
           <p>This site is run by Canvas Tech Solutions, which is responsible for the data described here.</p>
 
