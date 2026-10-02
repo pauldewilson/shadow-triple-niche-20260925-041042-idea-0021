@@ -24,6 +24,15 @@
  * page inert). Storage, receipts, retries, states and hooks are untouched.
  * All additions bind only in the config-gated activation path.
  *
+ * r3.1/r5.1 fix (2026-10-02, user report: choosing an option scrolled a
+ * mobile visitor from the top to the bottom of the page): the closeSurface
+ * focus handoff to the page-flow footer "Privacy choices" button now
+ * suppresses the browser's scroll-into-view (focus({preventScroll:true}) with
+ * a capture-and-restore fallback for engines that ignore the options object).
+ * Focus still LANDS on the button (a11y/keyboard continuity unchanged); only
+ * the viewport scroll is suppressed. Overlay focus targets cannot scroll the
+ * page (they are position:fixed) but use preventScroll too for determinism.
+ *
  * Two-state contract:
  *  - Local engineering pages ship a comment-only tracking-config.js stub, so
  *    window.__SHADOW_TRACKING_CONFIG__ stays undefined — and file:// never
@@ -739,7 +748,9 @@
     setHidden(banner, true);
     refreshFooter();
     if (footerPrivacy && !footerPrivacy.hasAttribute('hidden') && reopenBtn) {
-      reopenBtn.focus(); // focus never lands on a removed/hidden node (ui-ux §8.3)
+      // Focus still lands on the footer control (ui-ux §8.3: never a removed/
+      // hidden node) — without scrolling the user's viewport (r3.1/r5.1).
+      focusPreservingScroll(reopenBtn);
     }
   }
 
@@ -771,7 +782,7 @@
     var pref = loadPref();
     if (!pref) return; // control only exists once a choice is stored
     showBannerManager(pref);
-    if (bannerTitle) bannerTitle.focus(); // user-initiated reveal (ui-ux §8.3)
+    focusEl(bannerTitle); // user-initiated reveal (ui-ux §8.3); overlay target — cannot scroll the page
   }
 
   function onClose() {
@@ -809,9 +820,39 @@
     }
   }
 
+  /* Focus a control that lives inside the position:fixed overlay. Such
+     targets are always within the viewport, so focusing them can never scroll
+     the page (any scroll they could cause is internal to the overlay's own
+     scroll containers — card/panel — not the document); preventScroll is used
+     for determinism, with a plain-focus fallback for engines that ignore the
+     options object. */
   function focusEl(el) {
     if (!el) return;
-    try { el.focus(); } catch (err) { /* focus is best-effort */ }
+    try { el.focus({ preventScroll: true }); } catch (err) { try { el.focus(); } catch (err2) { /* focus is best-effort */ } }
+  }
+
+  /* Focus a PAGE-FLOW element without scrolling the viewport (r3.1/r5.1, user
+     report 2026-10-02: the closeSurface handoff to the footer "Privacy
+     choices" button teleported mobile users from the top of the page to the
+     bottom). preventScroll suppresses the browser's scroll-into-view on
+     engines that support it; the capture-and-restore fallback covers engines
+     that ignore the options object (older WebKit): any drift detected
+     synchronously after the focus call can only be the focus scroll itself,
+     so restoring the exact pre-focus offset is safe. No deferred re-check —
+     a second pass could fight legitimate momentum scrolling. The
+     focus-scroll guard cannot interact with this restore (it fires on
+     focusin only and early-returns while the banner is hidden — the state at
+     every closeSurface handoff). closeSurface is fully synchronous, so the
+     banner-hide → refreshFooter → focus ordering cannot race the drift
+     check. */
+  function focusPreservingScroll(el) {
+    if (!el) return;
+    var x = window.pageXOffset || 0;
+    var y = window.pageYOffset || 0;
+    try { el.focus({ preventScroll: true }); } catch (err) { try { el.focus(); } catch (err2) { /* focus is best-effort */ } }
+    if (window.pageXOffset !== x || window.pageYOffset !== y) {
+      try { window.scrollTo(x, y); } catch (err) { /* restore is best-effort */ }
+    }
   }
 
   /* While the mobile fullscreen panel is open the background page becomes
