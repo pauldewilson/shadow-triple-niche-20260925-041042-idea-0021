@@ -273,12 +273,55 @@
     return err;
   }
 
+  /* Captcha readiness is NOT "grecaptcha.enterprise exists": Google attaches
+     enterprise.execute later via a progressively loaded submodule, so a mere
+     existence check raced the first submit ("grecaptcha.enterprise.execute
+     is not a function", live 2026-10-03). Ready means execute is callable. */
+  function recaptchaExecuteReady() {
+    return !!(window.grecaptcha && window.grecaptcha.enterprise &&
+      typeof window.grecaptcha.enterprise.execute === 'function');
+  }
+
+  /* Wait for execute-readiness: prefer the API's own ready() callback when
+     present (finer-grained readiness signal), with a 150ms/40-tries poll
+     ALWAYS running as the guaranteed backstop — a one-shot guard lets
+     whichever fires first win, so done()/failed() can never double-fire and
+     the wait can never outlive the poll's timeout. If ready() fires before
+     execute has attached, it is ignored and the poll keeps waiting. */
+  function awaitRecaptchaExecute(done, failed, tries) {
+    var settled = false;
+    var timer = null;
+    var win = function () {
+      if (settled) return;
+      settled = true;
+      if (timer) clearInterval(timer);
+      done();
+    };
+    var lose = function () {
+      if (settled) return;
+      settled = true;
+      if (timer) clearInterval(timer);
+      failed();
+    };
+    var enterprise = window.grecaptcha && window.grecaptcha.enterprise;
+    if (enterprise && typeof enterprise.ready === 'function') {
+      enterprise.ready(function () {
+        if (recaptchaExecuteReady()) win();
+      });
+    }
+    timer = setInterval(function () {
+      tries += 1;
+      if (recaptchaExecuteReady()) win();
+      else if (tries > 40) lose();
+    }, 150);
+  }
+
   /* reCAPTCHA Enterprise (score-based, invisible): inject the loader ONCE
      (data-* guard), then execute with action "signup" — the canvaserp-proven
      pattern. This loader is the ONLY external request the contract allows, and
      it never happens without a live config requiring captcha. */
   function loadRecaptcha(config) {
-    if (window.grecaptcha && window.grecaptcha.enterprise) return Promise.resolve();
+    if (recaptchaExecuteReady()) return Promise.resolve();
     if (recaptchaPromise) return recaptchaPromise;
     recaptchaPromise = new Promise(function (resolve, reject) {
       var script = document.createElement('script');
@@ -298,13 +341,17 @@
 
   function getRecaptchaToken(config) {
     return loadRecaptcha(config).then(function () {
-      var enterprise = window.grecaptcha && window.grecaptcha.enterprise;
-      if (!enterprise) return Promise.reject(captchaError('recaptcha unavailable'));
+      /* loader onload is NOT execute-ready: the progressive submodule can
+         still be attaching enterprise.execute — wait for callable execute
+         (one-shot readiness gate) before touching enterprise.execute. */
       return new Promise(function (resolve, reject) {
-        enterprise.ready(function () {
+        awaitRecaptchaExecute(function () {
+          var enterprise = window.grecaptcha && window.grecaptcha.enterprise;
           enterprise.execute(config.siteKey, { action: 'signup' })
             .then(resolve, function () { reject(captchaError('token failed')); });
-        });
+        }, function () {
+          reject(captchaError('recaptcha unavailable'));
+        }, 0);
       });
     });
   }
