@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" role="img" aria-labelledby="fav-title fav-desc">
+  <title id="fav-title">Quoteleg favicon</title>
+  <desc id="fav-desc">Deep oxide rounded square with a bone letter Q, matching the page's oxide CTA fills.</desc>
+  <!-- The Northern Docket: oxide #6B2E1F fill + bone #F4F2ED label (white-on-oxide 10.32:1),
+       mirroring the built page's .btn-primary (oxide fill, light label) and the wordmark "Q". -->
+  <rect x="0" y="0" width="32" height="32" rx="6" fill="#6B2E1F"/>
+  <text x="16" y="23" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="700" fill="#F4F2ED">Q</text>
+</svg>
