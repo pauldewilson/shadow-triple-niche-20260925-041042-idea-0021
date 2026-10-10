@@ -33,6 +33,19 @@
  * the viewport scroll is suppressed. Overlay focus targets cannot scroll the
  * page (they are position:fixed) but use preventScroll too for determinism.
  *
+ * Landing count beacon (ads-funnel-fix__20261010-014500, user directive
+ * 2026-10-10): while the consent decision is UNANSWERED (loadPref() null),
+ * each page activation — first load, prerender activation, BFCache
+ * restoration — fires ONE anonymous, storage-free, identifier-free landing
+ * row to {endpoint}/api/v1/landing-ping (page path, traffic-source/utm
+ * tags, referring-site origin, coarse device class, time). sendBeacon with
+ * an application/json blob, else a single fetch keepalive; no retry, no
+ * queue, no storage, no identifiers; a failed ping is silently dropped.
+ * Accepted → the consented visit flow runs exactly as before; declined →
+ * nothing is sent. The decision-state banner note ("Until you answer…") is
+ * visible only while unanswered — hidden in manager mode, where the
+ * visitor has already answered.
+ *
  * Two-state contract:
  *  - Local engineering pages ship a comment-only tracking-config.js stub, so
  *    window.__SHADOW_TRACKING_CONFIG__ stays undefined — and file:// never
@@ -518,6 +531,126 @@
     });
   }
 
+  /* ------------------------------------------------ landing count beacon */
+
+  /* Diagnostic fix #1 (ads-funnel-fix__20261010-014500, user directive
+     2026-10-10): while the consent decision is UNANSWERED, every page
+     activation counts one anonymous landing row at /api/v1/landing-ping —
+     page path, traffic-source (utm) tags, referring-site origin, coarse
+     device class, time. NO identifier, NO cookie, NO browser storage, NO
+     retry, NO queue: one fire-and-forget attempt per activation, a failed
+     ping is silently dropped. The queue/identity machinery is deliberately
+     NOT involved. Accepted → the consented visit flow covers the load
+     exactly as before; declined → the consent promise holds and nothing is
+     sent. Inert without a valid config (called only from the gated paths). */
+
+  /* One approved-param value, same value discipline as sanitizeUrl
+     (frozen contract §1.6.5): control characters and values over
+     MAX_PARAM_VALUE are discarded, identical duplicates collapse,
+     conflicting duplicates omit the field entirely (never first/last). */
+  function approvedParamValue(parsed, key) {
+    var values = parsed.searchParams.getAll(key);
+    if (!values.length) return '';
+    var valid = [];
+    for (var v = 0; v < values.length; v++) {
+      var value = values[v];
+      if (hasControlChars(value) || value.length > MAX_PARAM_VALUE) continue;
+      if (valid.indexOf(value) === -1) valid.push(value);
+    }
+    if (valid.length !== 1) return '';
+    return valid[0];
+  }
+
+  /* Coarse device class derived from the UA string TRANSIENTLY, inside the
+     ping payload only — never stored, never attached to any other flow
+     (beacon contract: mobile | desktop | tablet | other). */
+  function landingDeviceClass() {
+    var ua = String((navigator && navigator.userAgent) || '');
+    if (!ua) return 'other';
+    if (/iPad|Tablet|Silk/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua))) return 'tablet';
+    if (/Mobi|iPhone|iPod|Windows Phone|IEMobile|BlackBerry|Opera Mini/i.test(ua)) return 'mobile';
+    if (/Windows|Macintosh|Linux|X11|CrOS/i.test(ua)) return 'desktop';
+    return 'other';
+  }
+
+  function buildLandingPingPayload() {
+    var parsed;
+    try {
+      parsed = new URL(window.location.href);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+    } catch (err) {
+      return null;
+    }
+    /* page_path is the existing minimizeUrl() derivation (frozen contract
+       §1.7) restricted to the path — same protocol guards, never query or
+       fragment. The utm fields are parsed from location.search as discrete
+       fields, never the raw query string. */
+    return {
+      site_id: cfg.siteId,
+      environment: cfg.environment,
+      page_path: parsed.pathname,
+      utm_source: approvedParamValue(parsed, 'utm_source'),
+      utm_medium: approvedParamValue(parsed, 'utm_medium'),
+      utm_campaign: approvedParamValue(parsed, 'utm_campaign'),
+      utm_content: approvedParamValue(parsed, 'utm_content'),
+      utm_term: approvedParamValue(parsed, 'utm_term'),
+      utm_id: approvedParamValue(parsed, 'utm_id'),
+      referrer_origin: referrerOrigin(),
+      device_class: landingDeviceClass(),
+      client_time: new Date().toISOString()
+    };
+  }
+
+  /* Transport (beacon contract): navigator.sendBeacon when available, else
+     ONE fetch keepalive. No retry, no queue, no storage of any kind — a
+     failed ping is silently dropped (acceptable for counting). The blob
+     keeps the application/json content type the API expects; sendBeacon's
+     false return (queue full) stays the single attempt. */
+  function transmitLandingPing(bodyString) {
+    var url = cfg.endpoint + '/api/v1/landing-ping';
+    if (navigator && typeof navigator.sendBeacon === 'function') {
+      try {
+        navigator.sendBeacon(url, new Blob([bodyString], { type: 'application/json' }));
+        return;
+      } catch (err) { /* beacon unavailable mid-call → single keepalive attempt below */ }
+    }
+    try {
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyString,
+        keepalive: true
+      }).catch(function () { /* one attempt; failures are silently dropped */ });
+    } catch (err) { /* dropped */ }
+  }
+
+  function sendLandingPing() {
+    var payload = buildLandingPingPayload();
+    if (!payload) return; // unparseable location → honest absence, no fabrication
+    transmitLandingPing(JSON.stringify(payload));
+  }
+
+  /* One beacon decision per activation. `pref` is that activation's
+     already-loaded loadPref() result: accepted → the consented visit flow
+     covers this load exactly as before (no behavior change); declined →
+     the consent promise holds, nothing is sent; null → UNANSWERED: the
+     banner is showing (or is about to) and this visit is counted.
+     Prerendering documents defer to prerenderingchange like the visit
+     flow — an unactivated prerender never pings. */
+  function landingPingForActivation(pref) {
+    if (!cfg) return;
+    if (pref) return;
+    if (typeof document.prerendering === 'boolean' && document.prerendering) {
+      var onActivate = function () {
+        document.removeEventListener('prerenderingchange', onActivate);
+        landingPingForActivation(loadPref());
+      };
+      document.addEventListener('prerenderingchange', onActivate);
+      return;
+    }
+    sendLandingPing();
+  }
+
   /* ------------------------------------------------------- consent flows */
 
   function activateAccept() {
@@ -696,7 +829,8 @@
   function byHook(hook) { return document.querySelector('[data-' + hook + ']'); }
 
   var banner, allowBtn, declineBtn, currentLine, toggleBtn, closeBtn,
-      footerPrivacy, reopenBtn, stateText, statusLine, bannerTitle;
+      footerPrivacy, reopenBtn, stateText, statusLine, bannerTitle,
+      noteEl; // pre-choice count disclosure (ads-funnel-fix__20261010-014500)
   /* Sticky-overlay additions (consent-banner-sticky__20261002-145950) */
   var detailsEl, detailsSummary, detailsCloseBtn, bannerInner;
   var inertTargets = [];        // body children frozen out while the fullscreen panel is open
@@ -724,6 +858,7 @@
     setHidden(banner, false);
     setHidden(allowBtn, false);
     setHidden(declineBtn, false);
+    setHidden(noteEl, false); // unanswered: the count disclosure applies
     setHidden(currentLine, true);
     setHidden(toggleBtn, true);
     setHidden(closeBtn, true);
@@ -735,6 +870,7 @@
     setHidden(banner, false);
     setHidden(allowBtn, true);
     setHidden(declineBtn, true);
+    setHidden(noteEl, true); // answered: the "until you answer" disclosure no longer applies
     setHidden(currentLine, false);
     if (currentLine) currentLine.textContent = pref.choice === 'accepted' ? 'Analytics: allowed' : 'Analytics: declined';
     setHidden(toggleBtn, false);
@@ -1044,6 +1180,7 @@
     reopenBtn = byHook('consent-reopen');
     stateText = byHook('consent-state');
     statusLine = byHook('consent-status');
+    noteEl = byHook('consent-note'); // pre-choice count disclosure (ads-funnel-fix__20261010-014500)
     bannerTitle = document.getElementById('consent-banner-title');
 
     /* Sticky-overlay additions (consent-banner-sticky__20261002-145950):
@@ -1076,6 +1213,11 @@
       refreshFooter(); // declined (or post-withdrawal)
     }
 
+    // Landing count beacon (ads-funnel-fix__20261010-014500): counts only
+    // while the decision is UNANSWERED; accepted/declined prefs are no-ops
+    // here (the consented flows above covered their own loads).
+    landingPingForActivation(pref);
+
     bindUi();
 
     // BFCache restoration is its own pageview occurrence (plan §7); focus/scroll
@@ -1083,7 +1225,14 @@
     window.addEventListener('pageshow', function (event) {
       if (!event || !event.persisted) return;
       var current = loadPref();
-      if (!current || current.noticeVersion !== cfg.noticeVersion || pausedForReprompt) return;
+      if (!current) {
+        // Unanswered restore is its own counted activation (beacon,
+        // ads-funnel-fix__20261010-014500); the consented flows below stay
+        // untouched.
+        landingPingForActivation(current);
+        return;
+      }
+      if (current.noticeVersion !== cfg.noticeVersion || pausedForReprompt) return;
       if (current.choice !== 'accepted') return;
       sendCurrentPageview();
     });

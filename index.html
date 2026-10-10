@@ -237,6 +237,7 @@
         <button type="button" class="consent-btn" data-consent-allow>Allow analytics</button>
         <button type="button" class="consent-btn" data-consent-decline>Decline analytics</button>
       </div>
+      <p class="consent-banner__note" data-consent-note>Until you answer, we count each visit anonymously — no cookies, no browser storage, no identifiers, nothing personal.</p>
 
       <!-- Manager mode only (reopened via footer "Privacy choices" after a
            choice exists); hidden in the initial decision state. -->
@@ -256,6 +257,9 @@
           <button type="button" class="consent-details__close" data-consent-details-close>Close</button>
           <p class="consent-details__heading">Who is responsible</p>
           <p>This site is run by Canvas Tech Solutions, which is responsible for the data described here.</p>
+
+          <p class="consent-details__heading">The anonymous visit count</p>
+          <p>Before you answer, each page view is counted as one anonymous row: the page path, any traffic-source (utm) tags, the referring site when present, device type (mobile, desktop or tablet) and the time — nothing else is kept, on your device or ours.</p>
 
           <p class="consent-details__heading">What we collect if you allow analytics</p>
           <ul>
