@@ -60,6 +60,7 @@
           <p>And then the invoice itself usually gets retyped into QuickBooks by hand.</p>
           <p>None of these steps is hard on its own. Together, they're exactly where retyping and small errors creep in.</p>
         </div>
+        <p class="anchor-cta-row"><a class="btn btn-secondary" href="#signup">Get launch info</a></p>  <!-- fleet r2 C4: "Get launch info" reuse, sanctioned -->
       </div>
     </section>
 
@@ -157,6 +158,7 @@
         <p class="pricing-bills">Fleet size means the aircraft on your account. Monthly bill by fleet size: 1 aircraft CA$79 · 2 aircraft CA$98 · 3 aircraft CA$147 · 4 aircraft CA$116 · 5 aircraft CA$145. Add a 4th aircraft and your bill drops — the per-aircraft rate falls as the fleet grows.</p>
         <p class="pricing-body">Every paid plan includes the full toolkit: saved rate cards, NAV CANADA fee lines, GST/HST treatment, branded quote PDFs and QuickBooks-ready invoice export. Pick the plan that fits your fleet — change plans as your fleet changes. The toolkit stays the same. Billed monthly. No setup fees.</p>
         <p class="pricing-closer">Not sure which plan fits? Leave your details below and we'll send you more info when we launch.</p>
+        <p class="anchor-cta-row"><a class="btn btn-secondary" href="#signup">Get launch info</a></p>  <!-- fleet r2 C4: "Get launch info" reuse, sanctioned -->
       </div>
     </section>
 
@@ -231,13 +233,10 @@
   <aside class="consent-banner" data-consent-banner aria-labelledby="consent-banner-title" hidden>
     <div class="consent-banner__inner">
       <h2 id="consent-banner-title" tabindex="-1">Allow visit analytics?</h2>
-      <p class="consent-banner__body">With your permission, we use a random browser ID for up to 30 days to connect visits and signups on this site. We record campaign tags, the pages you visit and basic browser/device details, and keep detailed records for up to 90 days. You can decline and still sign up, or change your choice anytime.</p>
-
       <div class="consent-banner__actions">
         <button type="button" class="consent-btn" data-consent-allow>Allow analytics</button>
         <button type="button" class="consent-btn" data-consent-decline>Decline analytics</button>
       </div>
-      <p class="consent-banner__note" data-consent-note>Until you answer, we count each visit anonymously — no cookies, no browser storage, no identifiers, nothing personal.</p>
 
       <!-- Manager mode only (reopened via footer "Privacy choices" after a
            choice exists); hidden in the initial decision state. -->
@@ -255,6 +254,8 @@
         <summary class="consent-details__summary"><span>Privacy details</span></summary>
         <div class="consent-details__body">
           <button type="button" class="consent-details__close" data-consent-details-close>Close</button>
+          <p class="consent-banner__body">With your permission, we use a random browser ID for up to 30 days to connect visits and signups on this site. We record campaign tags, the pages you visit and basic browser/device details, and keep detailed records for up to 90 days. You can decline and still sign up, or change your choice anytime.</p>
+          <p class="consent-banner__note" data-consent-note>Until you answer, we count each visit anonymously — no cookies, no browser storage, no identifiers, nothing personal.</p>
           <p class="consent-details__heading">Who is responsible</p>
           <p>This site is run by Canvas Tech Solutions, which is responsible for the data described here.</p>
 
@@ -340,6 +341,13 @@
       <p class="sr-only" role="status" data-consent-status></p>
     </div>
   </footer>
+
+  <!-- Sticky mobile CTA bar (fleet-conversion__20261016-120445 r2): CSS-only,
+       <1024px; suppressed while the consent surface is open via the shared
+       styles.css :has() rule (no JS). Internal anchor — inert-safe locally. -->
+  <div class="sticky-cta">
+    <a class="sticky-cta__link" href="#signup">Get launch info</a>
+  </div>
 
   <script src="signup.js" defer></script>
   <script src="signup-config.js" defer></script>
